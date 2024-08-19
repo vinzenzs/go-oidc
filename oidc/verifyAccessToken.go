@@ -46,7 +46,7 @@ type accessToken struct {
 // verify JWTs. As opposed to Verifier, the context is used to configure requests
 // to the upstream JWKs endpoint. The provided context's cancellation is ignored.
 func (p *Provider) AccessTokenVerifierContext(ctx context.Context, config *Config) *AccessTokenVerifier {
-	return p.newAccessTokenVerifierNewRemoteKeySet(ctx, p.jwksURL), config)
+	return p.newAccessTokenVerifier(NewRemoteKeySet(ctx, p.jwksURL), config)
 }
 
 // Verifier returns an AccessTokenVerifier that uses the provider's key set to verify JWTs.
@@ -54,7 +54,7 @@ func (p *Provider) AccessTokenVerifierContext(ctx context.Context, config *Confi
 // The returned verifier uses a background context for all requests to the upstream
 // JWKs endpoint. To control that context, use VerifierContext instead.
 func (p *Provider) AccessTokenVerifier(config *Config) *AccessTokenVerifier {
-	return p.newAccessTokenVerifierp.remoteKeySet(), config)
+	return p.newAccessTokenVerifier(p.remoteKeySet(), config)
 }
 
 func (p *Provider) newAccessTokenVerifier(keySet KeySet, config *Config) *AccessTokenVerifier {
@@ -66,6 +66,10 @@ func (p *Provider) newAccessTokenVerifier(keySet KeySet, config *Config) *Access
 		config = cp
 	}
 	return NewAccessTokenVerifier(p.issuer, keySet, config)
+}
+
+func NewAccessTokenVerifier(issuerURL string, keySet KeySet, config *Config) *AccessTokenVerifier {
+	return &AccessTokenVerifier{keySet: keySet, config: config, issuer: issuerURL}
 }
 
 func (v *AccessTokenVerifier) Verify(ctx context.Context, rawAccessToken string) (*AccessToken, error) {
