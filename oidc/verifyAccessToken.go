@@ -1,4 +1,4 @@
-package oidc
+.package oidc
 
 import (
 	"bytes"
@@ -40,6 +40,32 @@ type accessToken struct {
 	AtHash       string                 `json:"at_hash"`
 	ClaimNames   map[string]string      `json:"_claim_names"`
 	ClaimSources map[string]claimSource `json:"_claim_sources"`
+}
+
+// VerifierContext returns an AccessTokenVerifier that uses the provider's key set to
+// verify JWTs. As opposed to Verifier, the context is used to configure requests
+// to the upstream JWKs endpoint. The provided context's cancellation is ignored.
+func (p *Provider) AccessTokenVerifierContext(ctx context.Context, config *Config) *AccessTokenVerifier {
+	return p.newAccessTokenVerifierNewRemoteKeySet(ctx, p.jwksURL), config)
+}
+
+// Verifier returns an AccessTokenVerifier that uses the provider's key set to verify JWTs.
+//
+// The returned verifier uses a background context for all requests to the upstream
+// JWKs endpoint. To control that context, use VerifierContext instead.
+func (p *Provider) AccessTokenVerifier(config *Config) *AccessTokenVerifier {
+	return p.newAccessTokenVerifierp.remoteKeySet(), config)
+}
+
+func (p *Provider) newAccessTokenVerifier(keySet KeySet, config *Config) *AccessTokenVerifier {
+	if len(config.SupportedSigningAlgs) == 0 && len(p.algorithms) > 0 {
+		// Make a copy so we don't modify the config values.
+		cp := &Config{}
+		*cp = *config
+		cp.SupportedSigningAlgs = p.algorithms
+		config = cp
+	}
+	return NewAccessTokenVerifier(p.issuer, keySet, config)
 }
 
 func (v *AccessTokenVerifier) Verify(ctx context.Context, rawAccessToken string) (*AccessToken, error) {
