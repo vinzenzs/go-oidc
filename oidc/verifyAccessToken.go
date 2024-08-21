@@ -190,3 +190,10 @@ func (v *AccessTokenVerifier) Verify(ctx context.Context, rawAccessToken string)
 
 	return t, nil
 }
+
+func (a *AccessToken) Claims(v interface{}) error {
+	if a.claims == nil {
+		return errors.New("oidc: claims not set")
+	}
+	return json.Unmarshal(a.claims, v)
+}
